@@ -15,7 +15,8 @@ declare const confirm: (message?: string) => boolean;
   styleUrl: './journal-list.component.css'
 })
 export class JournalListComponent implements OnInit {
-  private api = inject(JournalEntryService);
+  // Expose service for template access to buildImageUrl
+  api = inject(JournalEntryService);
 
   loading = false;
   error: string | null = null;

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */ // Allow DOM globals in strict linter context: File, FormData
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { JournalEntry } from '../models/journal-entry.model';
@@ -14,6 +15,20 @@ export class JournalEntryService {
   private http = inject(HttpClient);
   /** Base API URL from environment */
   private baseUrl = `${environment.apiBaseUrl}/api/journal-entries`;
+
+  /**
+   * PUBLIC_INTERFACE
+   * Return a full image URL (absolute) for a possibly relative image path provided by backend.
+   * If the url is already absolute (starts with http), it is returned unchanged.
+   */
+  buildImageUrl(url?: string | null): string | undefined {
+    if (!url) return undefined;
+    if (/^https?:\/\//i.test(url)) return url;
+    // Ensure single slash joining
+    const base = environment.apiBaseUrl.replace(/\/+$/, '');
+    const path = String(url).replace(/^\/+/, '');
+    return `${base}/${path}`;
+  }
 
   /**
    * PUBLIC_INTERFACE
@@ -34,16 +49,47 @@ export class JournalEntryService {
   /**
    * PUBLIC_INTERFACE
    * Create a new journal entry.
+   * If imageFile is provided, uses multipart/form-data. Otherwise, sends JSON.
    */
-  create(entry: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at'>): Observable<JournalEntry> {
+  create(
+    entry: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at' | 'imageUrl'>,
+    imageFile?: File | null
+  ): Observable<JournalEntry> {
+    if (imageFile) {
+      const form = new FormData();
+      form.append('title', entry.title);
+      form.append('content', entry.content);
+      form.append('image', imageFile);
+      return this.http.post<JournalEntry>(this.baseUrl, form).pipe(catchError(this.handleError));
+    }
     return this.http.post<JournalEntry>(this.baseUrl, entry).pipe(catchError(this.handleError));
   }
 
   /**
    * PUBLIC_INTERFACE
    * Update an existing journal entry by ID.
+   * Supports multipart when a new image file is provided. If removeImage is true, indicates removal.
    */
-  update(id: number, entry: Partial<JournalEntry>): Observable<JournalEntry> {
+  update(
+    id: number,
+    entry: Partial<Pick<JournalEntry, 'title' | 'content'>>,
+    options?: { imageFile?: File | null; removeImage?: boolean }
+  ): Observable<JournalEntry> {
+    const imageFile = options?.imageFile ?? null;
+    const removeImage = options?.removeImage ?? false;
+
+    if (imageFile || removeImage) {
+      const form = new FormData();
+      if (entry.title != null) form.append('title', entry.title);
+      if (entry.content != null) form.append('content', entry.content);
+      if (imageFile) {
+        form.append('image', imageFile);
+      } else if (removeImage) {
+        form.append('removeImage', 'true');
+      }
+      return this.http.put<JournalEntry>(`${this.baseUrl}/${id}`, form).pipe(catchError(this.handleError));
+    }
+
     return this.http.put<JournalEntry>(`${this.baseUrl}/${id}`, entry).pipe(catchError(this.handleError));
   }
 

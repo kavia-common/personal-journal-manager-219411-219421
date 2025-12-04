@@ -28,6 +28,26 @@
       required
     ></textarea>
 
+    <div class="mt">
+      <label class="label">Photo (optional)</label>
+      <div style="display:flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <input
+          type="file"
+          accept="image/*"
+          (change)="onFileSelected($event)"
+          aria-label="Select an image to attach"
+          class="input"
+          style="padding: 8px;"
+        />
+        <button type="button" class="btn-secondary" (click)="clearSelectedImage()">Remove</button>
+      </div>
+
+      <div *ngIf="currentImageDisplayUrl() as preview" style="margin-top: 10px; display:flex; gap: 12px; align-items: center;">
+        <img [src]="preview" alt="Selected image preview" style="width: 140px; height: 90px; object-fit: cover; border-radius: 10px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.06);" />
+        <span style="color:#6b7280; font-size: 0.9rem;">Preview</span>
+      </div>
+    </div>
+
     <div class="actions">
       <button class="btn-secondary" type="button" (click)="cancel()">Cancel</button>
       <button class="btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>

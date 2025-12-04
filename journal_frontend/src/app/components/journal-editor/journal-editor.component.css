@@ -92,3 +92,19 @@ h2 {
 .state.error {
   color: #b91c1c;
 }
+
+/* Image preview styles to match theme */
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.preview img {
+  width: 140px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
+}
