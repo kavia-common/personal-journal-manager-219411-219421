@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */ // Allow DOM globals in strict linter context: File, FormData
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { JournalEntry } from '../models/journal-entry.model';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -36,6 +36,32 @@ export class JournalEntryService {
    */
   getAll(): Observable<JournalEntry[]> {
     return this.http.get<JournalEntry[]>(this.baseUrl).pipe(catchError(this.handleError));
+  }
+
+  /**
+   * PUBLIC_INTERFACE
+   * Fetch entries by date range (inclusive). Provide ISO date strings (YYYY-MM-DD).
+   */
+  getByDateRange(startDate: string, endDate: string): Observable<JournalEntry[]> {
+    const params = new HttpParams().set('start_date', startDate).set('end_date', endDate);
+    return this.http.get<JournalEntry[]>(this.baseUrl, { params }).pipe(catchError(this.handleError));
+  }
+
+  /**
+   * PUBLIC_INTERFACE
+   * Fetch entries for a specific date (YYYY-MM-DD), using date-range under the hood.
+   */
+  getByDate(dateStr: string): Observable<JournalEntry[]> {
+    return this.getByDateRange(dateStr, dateStr);
+  }
+
+  /**
+   * PUBLIC_INTERFACE
+   * Fetch only the list of dates that have entries within the range.
+   */
+  getDatesWithEntries(startDate: string, endDate: string): Observable<{ dates: string[] }> {
+    const params = new HttpParams().set('start_date', startDate).set('end_date', endDate);
+    return this.http.get<{ dates: string[] }>(`${this.baseUrl}/dates`, { params }).pipe(catchError(this.handleError));
   }
 
   /**

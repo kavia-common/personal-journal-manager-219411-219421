@@ -1,0 +1,57 @@
+<section class="calendar card">
+  <div class="calendar-header">
+    <button class="btn-secondary" (click)="prevMonth()" aria-label="Previous month">‹</button>
+    <h2 class="month">{{ monthLabel() }}</h2>
+    <button class="btn-secondary" (click)="nextMonth()" aria-label="Next month">›</button>
+
+    <a class="btn-primary" [routerLink]="['/entries/new']">New Entry</a>
+  </div>
+
+  <div class="grid header-row" aria-hidden="true">
+    <div class="cell head">Sun</div>
+    <div class="cell head">Mon</div>
+    <div class="cell head">Tue</div>
+    <div class="cell head">Wed</div>
+    <div class="cell head">Thu</div>
+    <div class="cell head">Fri</div>
+    <div class="cell head">Sat</div>
+  </div>
+
+  <div class="grid">
+    <div class="row" *ngFor="let week of weeks()">
+      <button
+        type="button"
+        class="cell day"
+        *ngFor="let d of week"
+        [class.muted]="!isCurrentMonth(d)"
+        [class.hasEntry]="hasEntries(d)"
+        (click)="selectDate(d)"
+      >
+        <span class="date-num">{{ d.getDate() }}</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="card day-panel" *ngIf="selectedDate() as dateIso">
+  <div class="panel-header">
+    <h3>Entries on {{ dateIso | date: 'fullDate' }}</h3>
+    <a class="link" [routerLink]="['/entries']">Open full list</a>
+  </div>
+
+  <div *ngIf="loading()" class="state">Loading...</div>
+  <div *ngIf="error()" class="state error">{{ error() }}</div>
+
+  <ul class="entries" *ngIf="!loading() && !error()">
+    <li class="entry" *ngFor="let e of dayEntries()">
+      <div class="entry-main">
+        <a class="entry-title" [routerLink]="['/entries', e.id]">{{ e.title }}</a>
+        <p class="entry-snippet">{{ e.content }}</p>
+      </div>
+      <div class="entry-meta">
+        <span class="date" *ngIf="e.updated_at as d">Updated {{ d | date:'short' }}</span>
+      </div>
+    </li>
+    <li class="empty" *ngIf="dayEntries().length === 0">No entries for this day.</li>
+  </ul>
+</section>
