@@ -1,34 +1,59 @@
-<section class="card">
-  <div class="card-header">
-    <h2>Journal Entries</h2>
-    <a class="btn-primary" [routerLink]="['/entries/new']">New Entry</a>
+<div class="list-container">
+  <div class="toolbar">
+    <div class="filters">
+      <input
+        type="text"
+        placeholder="Search by title..."
+        [(ngModel)]="titleQuery"
+        (ngModelChange)="onFiltersChanged()"
+        class="input search"
+        aria-label="Search by title" />
+
+      <input
+        type="date"
+        [(ngModel)]="startDate"
+        (change)="onFiltersChanged()"
+        class="input date"
+        aria-label="Start date" />
+
+      <span class="date-sep">to</span>
+
+      <input
+        type="date"
+        [(ngModel)]="endDate"
+        (change)="onFiltersChanged()"
+        class="input date"
+        aria-label="End date" />
+
+      <button class="btn secondary" (click)="clearFilters()" type="button">Clear</button>
+    </div>
+
+    <a class="btn primary" routerLink="/new">New Entry</a>
   </div>
 
-  <div *ngIf="loading" class="state">Loading...</div>
-  <div *ngIf="error" class="state error">{{ error }}</div>
+  <div class="state" *ngIf="loading">Loading…</div>
+  <div class="state error" *ngIf="error">{{ error }}</div>
+  <div class="state" *ngIf="!loading && !error && entries.length === 0">No entries found.</div>
 
-  <ul class="entries" *ngIf="!loading && !error">
-    <li *ngFor="let e of entries" class="entry">
-      <ng-container *ngIf="e.imageUrl as img">
-        <img
-          [src]="api.buildImageUrl(img)"
-          alt=""
-          aria-hidden="true"
-          class="entry-thumb"
-        />
-      </ng-container>
-
-      <div class="entry-main">
-        <a class="entry-title" [routerLink]="['/entries', e.id]">{{ e.title }}</a>
-        <p class="entry-snippet">{{ e.content }}</p>
+  <ul class="entries">
+    <li *ngFor="let e of entries" class="card">
+      <div class="meta">
+        <div class="title">
+          <a [routerLink]="['/entry', e.id]">{{ e.title }}</a>
+        </div>
+        <div class="dates">
+          <span>Updated: {{ e.updated_at | date:'medium' }}</span>
+          <span>•</span>
+          <span>Created: {{ e.created_at | date:'medium' }}</span>
+        </div>
       </div>
-      <div class="entry-meta">
-        <span class="date" *ngIf="e.updated_at as d">Updated {{ d | date:'medium' }}</span>
-        <button class="btn-danger" (click)="delete(e)">Delete</button>
+      <div class="thumb" *ngIf="e.image_url">
+        <img [src]="api.buildImageUrl(e.image_url)" alt="Entry image" />
       </div>
-    </li>
-    <li *ngIf="entries.length === 0" class="empty">
-      No entries yet. Click "New Entry" to create your first note.
+      <div class="actions">
+        <a [routerLink]="['/entry', e.id, 'edit']" class="btn small">Edit</a>
+        <button (click)="delete(e)" class="btn small danger" type="button">Delete</button>
+      </div>
     </li>
   </ul>
-</section>
+</div>

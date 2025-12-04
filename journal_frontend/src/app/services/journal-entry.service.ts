@@ -32,18 +32,37 @@ export class JournalEntryService {
 
   /**
    * PUBLIC_INTERFACE
-   * Fetch all journal entries.
+   * Fetch all journal entries with optional title and/or date range filters.
+   * Any of the filters can be omitted. Pagination params can be added by caller via options.
    */
-  getAll(): Observable<JournalEntry[]> {
-    return this.http.get<JournalEntry[]>(this.baseUrl).pipe(catchError(this.handleError));
+  getAll(options?: {
+    title?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    extraParams?: Record<string, string | number | boolean | undefined | null>;
+  }): Observable<JournalEntry[]> {
+    let params = new HttpParams();
+    const title = options?.title?.trim();
+    const start = options?.startDate?.trim();
+    const end = options?.endDate?.trim();
+    if (title) params = params.set('title', title);
+    if (start) params = params.set('start_date', start);
+    if (end) params = params.set('end_date', end);
+    if (options?.extraParams) {
+      Object.entries(options.extraParams).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params = params.set(k, String(v));
+      });
+    }
+    return this.http.get<JournalEntry[]>(this.baseUrl, { params }).pipe(catchError(this.handleError));
   }
 
   /**
    * PUBLIC_INTERFACE
    * Fetch entries by date range (inclusive). Provide ISO date strings (YYYY-MM-DD).
    */
-  getByDateRange(startDate: string, endDate: string): Observable<JournalEntry[]> {
-    const params = new HttpParams().set('start_date', startDate).set('end_date', endDate);
+  getByDateRange(startDate: string, endDate: string, title?: string | null): Observable<JournalEntry[]> {
+    let params = new HttpParams().set('start_date', startDate).set('end_date', endDate);
+    if (title && title.trim()) params = params.set('title', title.trim());
     return this.http.get<JournalEntry[]>(this.baseUrl, { params }).pipe(catchError(this.handleError));
   }
 
@@ -111,7 +130,7 @@ export class JournalEntryService {
       if (imageFile) {
         form.append('image', imageFile);
       } else if (removeImage) {
-        form.append('removeImage', 'true');
+        form.append('image_remove', 'true');
       }
       return this.http.put<JournalEntry>(`${this.baseUrl}/${id}`, form).pipe(catchError(this.handleError));
     }

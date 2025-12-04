@@ -1,8 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { JournalEntryService } from '../../services/journal-entry.service';
 import { JournalEntry } from '../../models/journal-entry.model';
+import { FormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 
 // Declare browser global for ESLint in strict configuration
 declare const confirm: (message?: string) => boolean;
@@ -10,7 +12,7 @@ declare const confirm: (message?: string) => boolean;
 @Component({
   selector: 'app-journal-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, RouterLink, DatePipe, FormsModule],
   templateUrl: './journal-list.component.html',
   styleUrl: './journal-list.component.css'
 })
@@ -22,7 +24,37 @@ export class JournalListComponent implements OnInit {
   error: string | null = null;
   entries: JournalEntry[] = [];
 
+  // Filters
+  titleQuery = '';
+  startDate: string | null = null; // YYYY-MM-DD
+  endDate: string | null = null;   // YYYY-MM-DD
+
+  private searchInput$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
+
   ngOnInit(): void {
+    // Debounce search/filter changes
+    this.searchInput$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => this.load());
+    this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // PUBLIC_INTERFACE
+  onFiltersChanged() {
+    this.searchInput$.next();
+  }
+
+  // PUBLIC_INTERFACE
+  clearFilters() {
+    this.titleQuery = '';
+    this.startDate = null;
+    this.endDate = null;
     this.load();
   }
 
@@ -30,7 +62,11 @@ export class JournalListComponent implements OnInit {
   load() {
     this.loading = true;
     this.error = null;
-    this.api.getAll().subscribe({
+    this.api.getAll({
+      title: this.titleQuery,
+      startDate: this.startDate || undefined,
+      endDate: this.endDate || undefined
+    }).subscribe({
       next: (data) => {
         this.entries = data.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
         this.loading = false;
