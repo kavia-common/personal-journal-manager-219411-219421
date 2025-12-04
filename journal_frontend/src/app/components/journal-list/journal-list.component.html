@@ -1,0 +1,25 @@
+<section class="card">
+  <div class="card-header">
+    <h2>Journal Entries</h2>
+    <a class="btn-primary" [routerLink]="['/entries/new']">New Entry</a>
+  </div>
+
+  <div *ngIf="loading" class="state">Loading...</div>
+  <div *ngIf="error" class="state error">{{ error }}</div>
+
+  <ul class="entries" *ngIf="!loading && !error">
+    <li *ngFor="let e of entries" class="entry">
+      <div class="entry-main">
+        <a class="entry-title" [routerLink]="['/entries', e.id]">{{ e.title }}</a>
+        <p class="entry-snippet">{{ e.content }}</p>
+      </div>
+      <div class="entry-meta">
+        <span class="date" *ngIf="e.updated_at as d">Updated {{ d | date:'medium' }}</span>
+        <button class="btn-danger" (click)="delete(e)">Delete</button>
+      </div>
+    </li>
+    <li *ngIf="entries.length === 0" class="empty">
+      No entries yet. Click "New Entry" to create your first note.
+    </li>
+  </ul>
+</section>
