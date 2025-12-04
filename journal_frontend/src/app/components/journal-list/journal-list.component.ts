@@ -1,92 +1,60 @@
-import { Component, inject, OnInit, DestroyRef } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { JournalEntryService } from '../../services/journal-entry.service';
-import { JournalEntry } from '../../models/journal-entry.model';
-import { FormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
-
-// Declare browser global for ESLint in strict configuration
-declare const confirm: (message?: string) => boolean;
+import { Component, OnInit } from '@angular/core';
+import { JournalEntry, JournalEntryService } from '../../services/journal-entry.service';
 
 @Component({
   selector: 'app-journal-list',
-  standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, FormsModule],
   templateUrl: './journal-list.component.html',
-  styleUrl: './journal-list.component.css'
+  styleUrls: ['./journal-list.component.css']
 })
 export class JournalListComponent implements OnInit {
-  // Expose service for template access to buildImageUrl
-  api = inject(JournalEntryService);
-
-  loading = false;
-  error: string | null = null;
   entries: JournalEntry[] = [];
+  loading = false;
+  error?: string;
 
-  // Filters
-  titleQuery = '';
-  startDate: string | null = null; // YYYY-MM-DD
-  endDate: string | null = null;   // YYYY-MM-DD
+  editId?: number;
+  showEditor = false;
 
-  private searchInput$ = new Subject<void>();
-  private destroy$ = new Subject<void>();
+  constructor(private service: JournalEntryService) {}
 
   ngOnInit(): void {
-    // Debounce search/filter changes
-    this.searchInput$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe(() => this.load());
-    this.load();
+    this.refresh();
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  // PUBLIC_INTERFACE
-  onFiltersChanged() {
-    this.searchInput$.next();
-  }
-
-  // PUBLIC_INTERFACE
-  clearFilters() {
-    this.titleQuery = '';
-    this.startDate = null;
-    this.endDate = null;
-    this.load();
-  }
-
-  // PUBLIC_INTERFACE
-  load() {
+  refresh(): void {
     this.loading = true;
-    this.error = null;
-    this.api.getAll({
-      title: this.titleQuery,
-      startDate: this.startDate || undefined,
-      endDate: this.endDate || undefined
-    }).subscribe({
-      next: (data) => {
-        this.entries = data.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err?.message || 'Failed to load entries';
-        this.loading = false;
-      }
+    this.error = undefined;
+    this.service.list().subscribe({
+      next: (data) => this.entries = data,
+      error: () => this.error = 'Failed to load entries',
+      complete: () => this.loading = false
     });
   }
 
-  // PUBLIC_INTERFACE
-  delete(entry: JournalEntry) {
-    if (!entry.id) return;
-    const ok = confirm(`Delete "${entry.title}"? This cannot be undone.`);
-    if (!ok) return;
+  onCreate(): void {
+    this.editId = undefined;
+    this.showEditor = true;
+  }
 
-    this.api.delete(entry.id).subscribe({
-      next: () => this.load(),
-      error: (err) => (this.error = err?.message || 'Failed to delete entry')
+  onEdit(entry: JournalEntry): void {
+    this.editId = entry.id;
+    this.showEditor = true;
+  }
+
+  onDelete(entry: JournalEntry): void {
+    const confirmed = window.confirm('Are you sure you want to delete this entry?');
+    if (!confirmed) return;
+    this.service.delete(entry.id).subscribe({
+      next: () => this.refresh(),
+      error: () => this.error = 'Failed to delete entry'
     });
+  }
+
+  onSaved(): void {
+    this.showEditor = false;
+    this.refresh();
+  }
+
+  onCancelled(): void {
+    this.showEditor = false;
   }
 }

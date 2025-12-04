@@ -1,15 +1,1 @@
-<div class="page">
-  <header class="header">
-    <div class="header-inner">
-      <a class="brand" [routerLink]="['/entries']" aria-label="Go to entries list">
-        <div class="brand-badge" aria-hidden="true"></div>
-        <div class="brand-title">{{ title }}</div>
-      </a>
-      <a class="navlink" [routerLink]="['/calendar']">Calendar</a>
-      <a class="navlink" [routerLink]="['/entries/new']">New Entry</a>
-    </div>
-  </header>
-  <main class="main">
-    <router-outlet />
-  </main>
-</div>
+<router-outlet></router-outlet>

@@ -1,56 +1,38 @@
-<section class="card">
-  <div class="card-header">
-    <h2>{{ isEdit ? 'Edit Entry' : 'New Entry' }}</h2>
-    <a class="link" [routerLink]="['/entries']">Back to list</a>
+<div class="editor-card">
+  <div class="header">
+    <h3>{{ entryId ? 'Edit Entry' : 'New Entry' }}</h3>
   </div>
 
-  <div *ngIf="loading" class="state">Loading...</div>
-  <div *ngIf="error" class="state error">{{ error }}</div>
-
-  <form *ngIf="!loading" (ngSubmit)="save()" class="form">
-    <label class="label">Title</label>
-    <input
-      class="input"
-      type="text"
-      name="title"
-      [(ngModel)]="entry.title"
-      placeholder="A short, descriptive title"
-      required
-    />
-
-    <label class="label mt">Content</label>
-    <textarea
-      class="textarea"
-      name="content"
-      [(ngModel)]="entry.content"
-      rows="10"
-      placeholder="Write your thoughts here..."
-      required
-    ></textarea>
-
-    <div class="mt">
-      <label class="label">Photo (optional)</label>
-      <div style="display:flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <input
-          type="file"
-          accept="image/*"
-          (change)="onFileSelected($event)"
-          aria-label="Select an image to attach"
-          class="input"
-          style="padding: 8px;"
-        />
-        <button type="button" class="btn-secondary" (click)="clearSelectedImage()">Remove</button>
+  <form [formGroup]="form" (ngSubmit)="onSave()" class="form">
+    <div class="field">
+      <label>Title</label>
+      <input type="text" formControlName="title" placeholder="Today’s thoughts..." />
+      <div class="error" *ngIf="form.controls['title'].touched && form.controls['title'].invalid">
+        Title is required and must be under 200 characters.
       </div>
+    </div>
 
-      <div *ngIf="currentImageDisplayUrl() as preview" style="margin-top: 10px; display:flex; gap: 12px; align-items: center;">
-        <img [src]="preview" alt="Selected image preview" style="width: 140px; height: 90px; object-fit: cover; border-radius: 10px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.06);" />
-        <span style="color:#6b7280; font-size: 0.9rem;">Preview</span>
+    <div class="field">
+      <label>Content</label>
+      <textarea formControlName="content" rows="6" placeholder="Write your entry..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Image</label>
+      <div class="image-row">
+        <input type="file" accept="image/*" (change)="onFileSelected($event)" />
+        <button type="button" class="btn-secondary" (click)="onRemoveImage()" *ngIf="imagePreviewUrl">Remove image</button>
+      </div>
+      <div class="thumb" *ngIf="imagePreviewUrl">
+        <img [src]="imagePreviewUrl | safeUrl" alt="Preview" />
       </div>
     </div>
 
     <div class="actions">
-      <button class="btn-secondary" type="button" (click)="cancel()">Cancel</button>
-      <button class="btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+      <button type="submit" class="btn-primary" [disabled]="loading">{{ entryId ? 'Save Changes' : 'Create Entry' }}</button>
+      <button type="button" class="btn-ghost" (click)="onCancel()">Cancel</button>
     </div>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
   </form>
-</section>
+</div>
